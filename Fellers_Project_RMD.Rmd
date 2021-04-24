@@ -1,7 +1,7 @@
 ---
 title: "Final Project"
 author: "Justin Fellers"
-date: "3/26/2021"
+date: "4/26/2021"
 output: pdf_document
 bibliography: references.bib
 ---
@@ -40,7 +40,8 @@ This project focused on exploring the data set and performing the classification
 
 4.  Report the prediction accuracy of the optimal DT model and compare it to a metric found in the literature.  
 
-# Feature Distributions
+# Methods and Results
+## Feature Distributions
 This section presents the distributions of all 23 features, which are wrapped into figures each containing four features.  Examining the diversity of feature values is a subjective, yet intuitive, way to estimate how valuable a feature can be to the DT algorithm.  By inspection, a feature's diversity may be evaluated by considering the range of its values along the X variable.  This stems from the concept that features with the most variation contain the most information about the dataset.  The features are short titled and employ free axes to avoid distortion.  
 
 ```{r fig.width=5, fig.height=4, fig.align='center', message=FALSE, eval=TRUE, echo=FALSE}
@@ -76,7 +77,7 @@ lower end values and the 'Equidistant' method is also used exactly
 `r df = data.frame(table(cvrp$CtyModule)); df$Freq[which(df$Var1=='E')]`
 times. 
 
-The features 7.SD_NNDist and 8.CV_NNDist also have an unusual amount of lower end values.  These features, which represent the standard deviation of the instance's nearest neighbor distance and the coefficient of variation of the instance's nearest neighbor distance are going to be related to the 6.FracDistinctDist.  This can be shown through a Pearson correlation matrix of these features:
+The features 7.SD_NNDist and 8.CV_NNDist also have an unusual amount of lower end values.  These features, which represent the standard deviation of the instance's nearest neighbor distance and the coefficient of variation of the instance's nearest neighbor distance are correlated to 6.FracDistinctDist.  This can be shown through a Pearson correlation matrix of these features:
 ```{r eval=TRUE, echo=FALSE}
 df.cor = cor(cvrp[12:14])
 df.cor
@@ -107,7 +108,7 @@ df = cvrp %>%
 ```
 Indeed, further analysis revealed that the 'Equidistant' city positioning module made up for 
 `r round(max(df$Count_5Clust)/sum(df$Count_5Clust), 3) * 100` %
-of all instances containing 5 clusters.  The generation algorithm contained four different methods to position cities, so this is a notable find worthy of futher investigation into the clustering methods of DBSCAN.  
+of all instances containing 5 clusters.  The generation algorithm contained four different methods to position cities, so the fact this single module resulted in 5 clusters with such frequency is a notable find worthy of further investigation into the clustering methods of DBSCAN.  
 
 ```{r fig.width=5, fig.height=4, fig.align='center', message=FALSE, eval=TRUE, echo=FALSE}
 # Features 13 - 16
@@ -135,7 +136,7 @@ ggplot(data = d, mapping = aes(x = value)) +
 ```
 Of interest in this set of plots is 19.Ratio OutlierdemDem, which displays a high count where the ratio of outlier city demand to total city demand is equal to 0. This is only feasible if the outlier demand is 0; therefore, it can only be possible if the instance has no outlier cities since all cities have a positive non zero demand.
 
-For an instance to have no outliers all of its cities must be classified within a cluster.  As discussed earlier, the creation method that ultimately leads to clustering results is the city positioning module.  Therefore, by examining the city positioning methods which result in a value of 0 in 19.Ratio_OutlierdemDem we may see if there is a pattern between how cities are positioned and if they allow for outliers in the clustering methodology.  
+For an instance to have no outliers, all of its cities must be assigned within a cluster.  As discussed earlier, the creation method that ultimately leads to clustering results is the city positioning module.  Therefore, by examining the city positioning methods which result in a value of 0 in 19.Ratio_OutlierdemDem we may see if there is a pattern between how cities are positioned and if they allow for outliers in the clustering methodology.  
 ```{r eval=TRUE, include = FALSE, echo=FALSE}
 df = cvrp %>%
   filter(X19.Ratio_OutlierdemDem == 0) %>%
@@ -145,8 +146,14 @@ df$CtyModule[which.max(df$n)]
 max(df$n)/sum(df$n)
 ```
 This analysis revealed an interesting pattern as the 'Equidistant' city module accounted for 
-`r round(max(df$n)/sum(df$n), 3) * 100` %
-of all instances containing with no outlier demand.  Upon reviewing the literature further, this behavior is consistent with the DBSCAN documentation [@re:scikit-learn]. DBSCAN is a hierarchical clustering algorithm that produces no outliers on data spread uniformly throughout a problem area.
+`r round(max(df$n)/sum(df$n), 3) * 100`%
+of all instances containing with no outlier demand.  Upon reviewing the literature further, this behavior is consistent with the DBSCAN documentation [@re:scikit-learn]. DBSCAN is a hierarchical clustering algorithm that produces no outliers on data spread uniformly throughout a problem area. 
+```{r eval=TRUE, include = FALSE, echo=FALSE}
+df = cvrp %>%
+  filter(CtyModule == 'E') %>%
+  count(X12.NumberClusters)
+```
+This is also related to an earlier observation regarding the 'Equidistant' module's high count of instances containing 5 clusters.  In fact, all instances constructed under this city position module contain either `r df$X12.NumberClusters[1]` or `r df$X12.NumberClusters[2]` clusters, with `r df$X12.NumberClusters[2]` clusters occurring `r round(df$n[2]/sum(df$n), 3)*100`% of the time. 
 
 ```{r fig.width=5, fig.height=4, fig.align='center', message=FALSE, eval=TRUE, echo=FALSE}
 # Features 21 - 23
@@ -161,7 +168,7 @@ ggplot(data = d, mapping = aes(x = value)) +
 This last batch of plots also showcase diversity in these features in the data set, particularly 21.AvgRouteLength and 23.MinNumberTrucks.  Though not exact, the 21.AvgRouteLength feature resembles a T[3,6,25] distribution, which was the sampling distribution used in the instance generation algorithm.
 
 
-# Label Distribution
+## Label Distribution
 This section explores the distribution of labels in the dataset and considers how it may influence the selection model.  
 ```{r fig.width=5, fig.height=4, fig.align='center', eval=TRUE, echo=FALSE}
 ############ Create Descending Histogram of 'Label' in CVRP dataset######################
@@ -195,7 +202,7 @@ by using the
 `r df$Var1[which.max(df$Freq)]`
 algorithm.  This comparison metric is discussed later to evaluate the model created by the DT algorithm. 
 
-# Feature-to-Label Analysis
+## Feature-to-Label Analysis
 This section explores the distribution of features by their algorithm label. Presented as Box-and-Whisker plots, these visualizations quickly indicate the range of feature values where algorithms performed best. These plots are relevant for intuition on the data set provided to the DT algorithm, which learns from previous feature-to-label relationships to predict the labels of new instances from its feature values.  
 
 The plots are first presented for all 23 features and then commented upon after observing any patterns or indications of algorithm performance within the data.  
@@ -237,7 +244,7 @@ in its distance matrix are minimal, and so is the standard deviation of its near
 
 The features 21.AvgRouteLength and 23.MinNumberTrucks also reveal noteworthy algorithm behavior.  Two groups possibly exist in 21.AvgRouteLength, one containing CW and GA and another with SOM and SP. This suggests one group performed better with more cities per route and another with less. Since the GA and SOM are both metaheuristics, perhaps increasing their search space in future studies would first lead to domination of its group. In 23.MinNumberTrucks notice the CW in a clear group of its own, outperforming all other algorithms when the instance requires a higher number of trucks. Indeed, with the exception of one GA outlier, the CW performed best on all instances requiring more than approximately 25 routes. 
 
-# Decision Tree Model
+## Decision Tree Model
 Using the python3 script **DSP539_DT**, I was able to explore different parameter settings for the DT algorithm using 10-fold cross validation.  Once the best parameters were found, I trained an optimal model using all training data.  The classification accuracy for the DT model is 
 `r acc = read.csv("Results/TestAcc_DataSize.csv", header = TRUE); round(acc$Test.Accuracy,3)*100`%.
 
@@ -247,10 +254,11 @@ The confusion matrix for a classification model presents the probability of corr
 
 The SP algorithm is never predicted as the best performing algorithm, which could be expected due to its infrequency of occurrence. Note that 63% of the true SP labels were predicted as SOM.Researching their performance similarities may be insightful in the future.  The CW algorithm is correctly predicted 87% of the time, though is misclassified as GA or SOM with 2% and 11% probability, respectively.   
 
+# Conclusion
 Overall, the DT accuracy of 
 `r acc = read.csv("Results/TestAcc_DataSize.csv", header = TRUE); round(acc$Test.Accuracy,3)*100`% 
 well outperforms the simulated SBS model that would produce 
 `r df = data.frame(table(cvrp$Label)); round(max(df$Freq)/sum(df$Freq), 3)*100`%
-with universal application of the CW algorithm.  This positively suggests the model learned from the data before making a prediction, which also verifies the features chosen to represent the instances.  
+with universal application of the CW algorithm.  This positively suggests the model learned from the data before making a prediction, which also verifies the features chosen to represent the instances.  Now I am going to build off this project by exploring different combinations of features and different classification methods, seeing if I can improve upon the classification results.  
 
 # Bibliography
