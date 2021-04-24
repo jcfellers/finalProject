@@ -1,7 +1,7 @@
 library(tidyverse)
 library(reshape2) #for the melt function
 
-cvrp <- read.csv(file="CVRP_dataset.csv")
+cvrp <- read.csv(file="Data/CVRP_dataset.csv")
 
 ################### Feature Distributions ################
 
@@ -107,7 +107,3 @@ for (features in features_list) {
       theme(legend.position = 'none')
   )
 }
-
-
-
-
